@@ -1,0 +1,14 @@
+#activePlayers{
+    height: 200px;
+    margin-bottom: 15px;
+
+}
+
+#activePlayers h3{
+    text-align: left;
+    margin: 0;
+    padding: 5px;
+    border-bottom: 1px solid black;
+    font-size: 13px;
+    font-weight: normal;
+}
