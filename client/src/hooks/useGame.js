@@ -1,4 +1,5 @@
-import { useEffect, useReducer, useRef } from "react";
+import { useContext, useEffect, useReducer, useRef } from "react";
+import SocketContext from "../context/SocketContext.jsx";
 
 
 function renderPlayer(player, ctx, avatarR) {
@@ -55,7 +56,8 @@ export function useGame(canvasRef) {
     const boundary = 100;
     const keys = {};
     const playersInSpace = useRef({});
-    const ws = new WebSocket('ws://localhost:3000');
+    const wsRef = useContext(SocketContext);
+    // const ws = new WebSocket('ws://localhost:3000');
 
 
 
@@ -63,25 +65,28 @@ export function useGame(canvasRef) {
 
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
+        
 
-        ws.onopen = function () {
+        wsRef.current.onopen = function () {
             let name = localStorage.getItem('name');
+
             if (!name) {
                 name = prompt('What should we call you?');
             }
 
             localStorage.setItem('name', name);
+
             const x = Math.floor(Math.random() * (canvas.width - avatarR + 1) + avatarR);
             const y = Math.floor(Math.random() * (canvas.height - avatarR + 1) + avatarR);
 
             myPlayer.current.x = x; myPlayer.current.y = y;
             myPlayer.current.color = '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0');
 
-            ws.send(JSON.stringify({ type: 'auth', player: myPlayer.current }));
+            wsRef.current.send(JSON.stringify({ type: 'auth', player: myPlayer.current }));
 
         }
         
-        ws.onmessage = function (event) {
+        wsRef.current.onmessage = function (event) {
             
             const message = JSON.parse(event.data);
 
@@ -100,6 +105,11 @@ export function useGame(canvasRef) {
                         y: y
                     }
                 }
+            }
+
+            else if(message.type === 'leave') {
+                const {id} = message;
+                delete playersInSpace.current[id];
             }
         }
         
@@ -157,24 +167,24 @@ export function useGame(canvasRef) {
             if (keys['ArrowUp'] || keys['w']) {
                 if (myPlayer.current.y - moveStep < avatarR) return;
                 myPlayer.current.y -= moveStep;
-                ws.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
+                wsRef.current.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
             }
             else if (keys['ArrowDown'] || keys['s']) {
                 if (myPlayer.current.y + moveStep > canvas.height - avatarR) return;
                 myPlayer.current.y += moveStep;
-                ws.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
+                wsRef.current.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
 
             }
             else if (keys['ArrowRight'] || keys['d']) {
                 if (myPlayer.current.x + moveStep > canvas.width - avatarR) return;
                 myPlayer.current.x += moveStep;
-                ws.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
+                wsRef.current.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
 
             }
             else if (keys['ArrowLeft'] || keys['a']) {
                 if (myPlayer.current.x - moveStep < avatarR) return;
                 myPlayer.current.x -= moveStep;
-                ws.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
+                wsRef.current.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
 
             }
 

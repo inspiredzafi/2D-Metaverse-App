@@ -11,12 +11,12 @@ export default function wsHandler(ws){
             if(message.type === 'auth'){
                 
                 socket.player = message.player;
-                console.log(message)
                 
                 informAboutOtherPlayers(socket);
-                console.log(socket.player)
+
                 broadcast({...message, type: 'join'}, socket);
             }
+
             else if(message.type === 'move'){
                 if(!socket.player) return socket.send(JSON.stringify({type: 'error', message: 'You need to authenticate first.'}) );
 
@@ -30,6 +30,10 @@ export default function wsHandler(ws){
 
         socket.on('close', () => { 
             console.log('The user Disconnected');
+            if(socket.player){
+
+                broadcast({type: 'leave', id: socket.player.id}, socket);
+            }
             removeUser(socket);
          })
 
