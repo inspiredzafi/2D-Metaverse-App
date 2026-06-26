@@ -9,16 +9,20 @@ export default function wsHandler(ws){
             const message = JSON.parse(rawMsg);
 
             if(message.type === 'auth'){
-                const {id, name, x, y, color} = message;
-                socket.player = {id, name, x, y, color};
+                
+                socket.player = message.player;
+                console.log(message)
+                
                 informAboutOtherPlayers(socket);
-                broadcast({type: 'join', player: socket.player});
+                console.log(socket.player)
+                broadcast({...message, type: 'join'}, socket);
             }
             else if(message.type === 'move'){
                 if(!socket.player) return socket.send(JSON.stringify({type: 'error', message: 'You need to authenticate first.'}) );
 
                 const {id, x, y} = message;
                 socket.player = {...socket.player, x, y};
+
                 broadcast({type: 'move', id, x, y}, socket);
             }
 

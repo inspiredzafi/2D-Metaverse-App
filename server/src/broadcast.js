@@ -10,7 +10,10 @@ export function removeUser(user){
 }
 
 export function informAboutOtherPlayers(socket){
+    // if(connectedPlayers.length <= 2) return;        // 2 because right now, the app is running in strict mode, so har cheeze do baar hoti hy, to socket object bhi 2 bar bna, and 2 bar server pay push hua and is bug nay mera 1hour kha lia. This fuckup should be documented.
+
     connectedPlayers.forEach((cPlayer) => { 
+ 
         if(socket !== cPlayer)
             socket.send(JSON.stringify({type: 'join', player: cPlayer.player}));        // cPlayer.player contains the playerId, name, x, y, color;
      })
