@@ -1,10 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useReducer, useRef} from "react";
 
-const playersInSpace = {
-    'player1': { id: 'player1', name: 'Alice', x: 100, y: 100, color: '#ff0000bb' },
-    'player2': { id: 'player2', name: 'Bob', x: 200, y: 150, color: '#00ff00ba' },
-    'player3': { id: 'player3', name: 'Charlie', x: 300, y: 200, color: '#0000ffa6' },
-}
 
 function renderPlayer(player, ctx, avatarR) {
 
@@ -59,6 +54,7 @@ export function useGame(canvasRef) {
     const avatarR = 25;
     const boundary = 100;
     const keys = {};
+    const playersInSpace = useRef({});
 
     useEffect(() => {
         const canvas = canvasRef.current;
@@ -132,11 +128,13 @@ export function useGame(canvasRef) {
             })();
 
             renderPlayer(myPlayer, ctx, avatarR);
-            Object.values(playersInSpace).forEach((player) => {
-                if (player.id !== myPlayer.id) {
+
+                Object.values(playersInSpace.current).forEach((player) => {
+                    // 
                     renderPlayer(player, ctx, avatarR);
-                }
-            });
+                    
+                });
+            
 
             requestAnimationFrame(gameLoop);
         }
