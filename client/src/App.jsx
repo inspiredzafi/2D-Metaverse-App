@@ -12,13 +12,13 @@ const App = () => {
   const [activeCall, setActiveCall] = useState(null);
 
   return (
-    <SocketProvider>
+    <>
     <Header/>
     <div className="container">
         <Playfield setActiveCall = {setActiveCall} />
         <CallArea activeCall={activeCall} setActiveCall ={setActiveCall}/>
     </div>
-    </SocketProvider>   
+    </>
 
   )
 }
