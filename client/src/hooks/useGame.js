@@ -48,7 +48,7 @@ function renderPlayer(player, ctx, avatarR) {
 
 
 
-export function useGame(canvasRef) {
+export function useGame(canvasRef, setActiveCall) {
 
     const myPlayer = useRef({ id: crypto.randomUUID(), name: localStorage.getItem('name'), x: 30, y: 30, color: '#87CEEB' });
     const moveStep = 3;
@@ -56,7 +56,8 @@ export function useGame(canvasRef) {
     const boundary = 100;
     const keys = {};
     const playersInSpace = useRef({});
-    const wsRef = useContext(SocketContext);
+    const { wsRef, addListener, removeListener } = useContext(SocketContext);
+    let testBool = true;
     // const ws = new WebSocket('ws://localhost:3000');
 
 
@@ -65,7 +66,9 @@ export function useGame(canvasRef) {
 
         const canvas = canvasRef.current;
         const ctx = canvas.getContext('2d');
-        
+
+        addListener(handleMessage);
+
 
         wsRef.current.onopen = function () {
             let name = localStorage.getItem('name');
@@ -85,36 +88,7 @@ export function useGame(canvasRef) {
             wsRef.current.send(JSON.stringify({ type: 'auth', player: myPlayer.current }));
 
         }
-        
-        wsRef.current.onmessage = function (event) {
-            
-            const message = JSON.parse(event.data);
 
-            if (message.type === 'join') {
-                const newPlayer = message.player;
-                playersInSpace.current = { ...playersInSpace.current, [newPlayer.id]: newPlayer }
-            }
-
-            else if (message.type === 'move') {
-                const { id, x, y } = message;
-                playersInSpace.current = {
-                    ...playersInSpace.current,
-                    [id]: {
-                        ...playersInSpace.current[id],
-                        x: x, 
-                        y: y
-                    }
-                }
-            }
-
-            else if(message.type === 'leave') {
-                const {id} = message;
-                delete playersInSpace.current[id];
-            }
-        }
-        
-    
-       
 
         function handleKeyDown(e) {
             keys[e.key] = true;
@@ -124,86 +98,83 @@ export function useGame(canvasRef) {
             keys[e.key] = false;
         }
 
-        // function movePlayer(e) {
-        //     switch (e.key) {
-        //         case 'ArrowUp':
-        //         case 'w':
-        //         case 'W':
-        //             if(myPlayer.y - moveStep < avatarR + 5) return ;
-        //             myPlayer.y -= moveStep;
-        //             break;
-
-        //         case 'ArrowDown':
-        //         case 's':
-        //         case 'S':
-        //             if(myPlayer.y + moveStep < canvas.height - avatarR )
-        //             myPlayer.y += moveStep;
-        //             break;
-
-        //         case 'ArrowRight':
-        //         case 'd':
-        //         case 'D':
-        //             if(myPlayer.x + moveStep < canvas.width - avatarR )
-        //             myPlayer.x += moveStep;
-        //             break;
-
-        //         case 'ArrowLeft':
-        //         case 'a':
-        //         case 'A':
-        //             if(myPlayer.x - moveStep < avatarR + 5) return ;
-        //             myPlayer.x -= moveStep;
-        //             break;
-        //     }
-        // }
-
         document.addEventListener('keydown', handleKeyDown);
-    document.addEventListener('keyup', handleKeyUp)
+        document.addEventListener('keyup', handleKeyUp);
 
-    function gameLoop() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        (() => {
-
-            if (keys['ArrowUp'] || keys['w']) {
-                if (myPlayer.current.y - moveStep < avatarR) return;
-                myPlayer.current.y -= moveStep;
-                wsRef.current.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
-            }
-            else if (keys['ArrowDown'] || keys['s']) {
-                if (myPlayer.current.y + moveStep > canvas.height - avatarR) return;
-                myPlayer.current.y += moveStep;
-                wsRef.current.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
-
-            }
-            else if (keys['ArrowRight'] || keys['d']) {
-                if (myPlayer.current.x + moveStep > canvas.width - avatarR) return;
-                myPlayer.current.x += moveStep;
-                wsRef.current.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
-
-            }
-            else if (keys['ArrowLeft'] || keys['a']) {
-                if (myPlayer.current.x - moveStep < avatarR) return;
-                myPlayer.current.x -= moveStep;
-                wsRef.current.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
-
+        function handleMessage(message) {
+            if (message.type === 'join') {
+                const newPlayer = message.player;
+                console.log(message);
+                playersInSpace.current = { ...playersInSpace.current, [newPlayer.id]: newPlayer }
             }
 
-        })();
+            else if (message.type === 'move') {
+                const { id, x, y } = message;
+                playersInSpace.current = {
+                    ...playersInSpace.current,
+                    [id]: {
+                        ...playersInSpace.current[id],
+                        x: x,
+                        y: y
+                    }
+                }
+            }
 
-        renderPlayer(myPlayer.current, ctx, avatarR);
+            else if (message.type === 'leave') {
+                const { id } = message;
+                delete playersInSpace.current[id];
+            }
+        }
 
-        Object.values(playersInSpace.current).forEach((player) => {
-            // 
-            renderPlayer(player, ctx, avatarR);
+        function gameLoop() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-        });
+            (() => {
 
+                if (keys['ArrowUp'] || keys['w']) {
+                    if (myPlayer.current.y - moveStep < avatarR) return;
+                    myPlayer.current.y -= moveStep;
+                    wsRef.current.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
+                }
+                else if (keys['ArrowDown'] || keys['s']) {
+                    if (myPlayer.current.y + moveStep > canvas.height - avatarR) return;
+                    myPlayer.current.y += moveStep;
+                    wsRef.current.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
+
+                }
+                else if (keys['ArrowRight'] || keys['d']) {
+                    if (myPlayer.current.x + moveStep > canvas.width - avatarR) return;
+                    myPlayer.current.x += moveStep;
+                    wsRef.current.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
+
+                }
+                else if (keys['ArrowLeft'] || keys['a']) {
+                    if (myPlayer.current.x - moveStep < avatarR) return;
+                    myPlayer.current.x -= moveStep;
+                    wsRef.current.send(JSON.stringify({ type: 'move', id: myPlayer.current.id, x: myPlayer.current.x, y: myPlayer.current.y }));
+
+                }
+
+            })();
+
+            renderPlayer(myPlayer.current, ctx, avatarR);
+
+            Object.values(playersInSpace.current).forEach((player) => {
+                // 
+                renderPlayer(player, ctx, avatarR);
+
+            });
+
+
+            requestAnimationFrame(gameLoop);
+        }
 
         requestAnimationFrame(gameLoop);
-    }
 
-    requestAnimationFrame(gameLoop);
-}, []);
+        return () =>{
+            removeListener(handleMessage);
+        }
+    }, []);
 
 
 }
