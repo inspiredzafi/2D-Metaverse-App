@@ -1,4 +1,4 @@
-import broadcast, { addUser, removeUser, informAboutOtherPlayers } from "./broadcast.js";
+import broadcast, { addUser, removeUser, informAboutOtherPlayers, sendToUser } from "./broadcast.js";
 
 export default function wsHandler(ws){
     ws.on('connection', (socket) => { 
@@ -24,6 +24,18 @@ export default function wsHandler(ws){
                 socket.player = {...socket.player, x, y};
 
                 broadcast({type: 'move', id, x, y}, socket);
+            }
+
+            else if(message.type === 'offer'){
+                sendToUser(message);
+            }
+
+            else if(message.type === 'answer'){
+                sendToUser(message);
+            }
+
+            else if(message.type === 'onicecandidate'){
+                sendToUser(message);
             }
 
          })

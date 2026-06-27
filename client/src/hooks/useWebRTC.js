@@ -28,7 +28,7 @@ export function useWebRTC({ localVRef, remoteVRef, activeCall, setActiveCall }) 
 
             peer.current.onicecandidate = function (e) {
                 if (e.candidate !== null) {
-                    wsRef.current.send(JSON.stringify({ type: 'onicecandidate', candidate: e.candidate, receiverId: activeCall.remoteId }))
+                    wsRef.current.send(JSON.stringify({ type: 'onicecandidate', candidate: e.candidate, remoteid: activeCall.remoteId }))
                 }
             }
 
@@ -56,7 +56,7 @@ export function useWebRTC({ localVRef, remoteVRef, activeCall, setActiveCall }) 
                 const offer = await peer.current.createOffer();
                 await peer.current.setLocalDescription(offer);
 
-                wsRef.current.send(JSON.stringify({ type: 'offer', sdp: peer.current.localDescription, senderId: activeCall.myId, receiverId: activeCall.remoteId }))
+                wsRef.current.send(JSON.stringify({ type: 'offer', sdp: peer.current.localDescription, senderId: activeCall.myId, remoteId: activeCall.remoteId }))
             }
 
 
@@ -76,7 +76,7 @@ export function useWebRTC({ localVRef, remoteVRef, activeCall, setActiveCall }) 
         }
         else if (message.type === 'offer') {
             if (!activeCall) {
-                setActiveCall({ myId: message.receiverId, remoteId: message.senderId });
+                setActiveCall({ myId: message.remoteId, remoteId: message.senderId });
 
             }
 
@@ -85,7 +85,7 @@ export function useWebRTC({ localVRef, remoteVRef, activeCall, setActiveCall }) 
             const answer = await peer.current.createAnswer();
             await peer.current.setLocalDescription(answer);
 
-            const message = { type: 'answer', sdp: peer.current.localDescription, senderId: activeCall.myId, receiverId: activeCall.remoteId };
+            const message = { type: 'answer', sdp: peer.current.localDescription, senderId: activeCall.myId, remoteId: activeCall.remoteId };
             ws.current.send(JSON.stringify(message));
         }
         else if (message.type === 'onicecandidate') {
