@@ -50,7 +50,7 @@ function renderPlayer(player, ctx, avatarR) {
 
 export function useGame(canvasRef, setActiveCall) {
 
-    const myPlayer = useRef({ id: crypto.randomUUID(), name: localStorage.getItem('name'), x: 30, y: 30, color: '#87CEEB' });
+    const myPlayer = useRef({ id: localStorage.getItem('id'), name: localStorage.getItem('name'), x: 30, y: 30, color: '#87CEEB' });
     const moveStep = 3;
     const avatarR = 25;
     const boundary = 100;
@@ -104,7 +104,7 @@ export function useGame(canvasRef, setActiveCall) {
         function handleMessage(message) {
             if (message.type === 'join') {
                 const newPlayer = message.player;
-                console.log(message);
+
                 playersInSpace.current = { ...playersInSpace.current, [newPlayer.id]: newPlayer }
             }
 

@@ -10,7 +10,7 @@ const CallArea = ({activeCall, setActiveCall}) => {
   const remoteVRef = useRef(null);
   const localVRef = useRef(null);
    
-    // useWebRTC(remoteVRef, localVRef, activeCall, setActiveCall);
+    useWebRTC(localVRef, remoteVRef, activeCall, setActiveCall);
 
   return (
     <div id='call-area'>

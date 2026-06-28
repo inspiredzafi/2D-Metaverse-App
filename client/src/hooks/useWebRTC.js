@@ -14,33 +14,39 @@ export async function startCamera() {
     return stream;
 }
 
-export function useWebRTC({ localVRef, remoteVRef, activeCall, setActiveCall }) {
+export function useWebRTC( localVRef, remoteVRef, activeCall, setActiveCall ) {
 
-    const peer = useRef(new RTCPeerConnection());
+    const peer = useRef(new RTCPeerConnection({iceServers: [
+        {urls: 'stun:stun.l.google.com:19302'}
+    ]}));
     const { wsRef, addListener, removeListener } = useContext(SocketContext);
 
 
     useEffect(() => {
         ; (async function () {
+
+            const localVideo = localVRef.current;
+            const remoteVideo = remoteVRef.current;
+
             addListener(handleMessage);
 
             console.log('activeCall', activeCall);
 
             peer.current.onicecandidate = function (e) {
                 if (e.candidate !== null) {
-                    wsRef.current.send(JSON.stringify({ type: 'onicecandidate', candidate: e.candidate, remoteid: activeCall.remoteId }))
+                    wsRef.current.send(JSON.stringify({ type: 'onicecandidate', candidate: e.candidate, remoteId: activeCall.remoteId }))
                 }
             }
 
 
             peer.current.ontrack = function (e) {
+                console.log('ontrack Executed');
                 remoteVideo.srcObject = e.streams[0];
             }
 
             if (!activeCall) return;
 
-            const localVideo = localVRef.current;
-            const remoteVideo = remoteVRef.current;
+            
 
             const stream = await startCamera();
 
@@ -71,24 +77,34 @@ export function useWebRTC({ localVRef, remoteVRef, activeCall, setActiveCall }) 
 
     async function handleMessage(message) {
         if (message.type === 'answer') {
-            await peer.current.setRemoteDescription(message.sdp);
+            console.log('answer received: ', message);
+            if(!peer.current.remoteDescription){
+
+                await peer.current.setRemoteDescription(message.sdp);
+            }
+            console.log('remoteDescription:', peer.current.remoteDescription);
 
         }
         else if (message.type === 'offer') {
+            let localActiveCall = activeCall;       // Why? Kyunkay state update hogi, neechay code run krnay k bad, jo error day day ga, right, to ye variable use krain gay updated state ki jagah, kyunkay ye information hi store kr rha, so ig uess, yes, we can do this.
             if (!activeCall) {
-                setActiveCall({ myId: message.remoteId, remoteId: message.senderId });
+                localActiveCall = { myId: message.remoteId, remoteId: message.senderId }
+                setActiveCall(localActiveCall);
 
             }
+            console.log('logging from offer', message);
 
             await peer.current.setRemoteDescription(message.sdp);
 
             const answer = await peer.current.createAnswer();
             await peer.current.setLocalDescription(answer);
 
-            const message = { type: 'answer', sdp: peer.current.localDescription, senderId: activeCall.myId, remoteId: activeCall.remoteId };
-            ws.current.send(JSON.stringify(message));
+            wsRef.current.send(JSON.stringify({ type: 'answer', sdp: peer.current.localDescription, senderId: localActiveCall.myId, remoteId: localActiveCall.remoteId }
+            ));
         }
         else if (message.type === 'onicecandidate') {
+
+           console.log('logging from icecandidate: ', message);
             await peer.current.addIceCandidate(message.candidate);
         }
     }

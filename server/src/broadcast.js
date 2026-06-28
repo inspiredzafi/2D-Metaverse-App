@@ -20,9 +20,9 @@ export function informAboutOtherPlayers(socket){
 }
 
 export function sendToUser(message){
-    const user = connectedPlayers.find((cPlayer) => { return message.remoteId === cPlayer.player.id })
-
-    user.send(JSON.stringify(message));
+    const player = connectedPlayers.find((player) => player.player.id === message.remoteId);
+    
+    player.send(JSON.stringify(message));
 }
 
 export default function broadcast(message, socket){

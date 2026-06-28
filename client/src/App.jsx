@@ -13,11 +13,14 @@ const App = () => {
 
   return (
     <>
-    <Header/>
-    <div className="container">
-        <Playfield setActiveCall = {setActiveCall} />
-        <CallArea activeCall={activeCall} setActiveCall ={setActiveCall}/>
-    </div>
+      <Header />
+      <div className="container">
+        <Playfield setActiveCall={setActiveCall} />
+        <CallArea activeCall={activeCall} setActiveCall={setActiveCall} />
+      </div>
+      <button onClick={() => setActiveCall({ myId: '234', remoteId: '123' })}>
+        Test Call
+      </button>
     </>
 
   )
