@@ -14,11 +14,18 @@ export async function startCamera() {
     return stream;
 }
 
-export function useWebRTC( localVRef, remoteVRef, activeCall, setActiveCall ) {
+export function useWebRTC(localVRef, remoteVRef, activeCall, setActiveCall) {
 
-    const peer = useRef(new RTCPeerConnection({iceServers: [
-        {urls: 'stun:stun.l.google.com:19302'}
-    ]}));
+    const peer = useRef(new RTCPeerConnection({
+        iceServers: [
+            { urls: 'stun:stun.l.google.com:19302' },
+            {
+            urls: 'turn:openrelay.metered.ca:80',
+            username: 'openrelayproject',
+            credential: 'openrelayproject'
+        }
+        ]
+    }));
     const { wsRef, addListener, removeListener } = useContext(SocketContext);
 
 
@@ -30,7 +37,6 @@ export function useWebRTC( localVRef, remoteVRef, activeCall, setActiveCall ) {
 
             addListener(handleMessage);
 
-            console.log('activeCall', activeCall);
 
             peer.current.onicecandidate = function (e) {
                 if (e.candidate !== null) {
@@ -40,13 +46,13 @@ export function useWebRTC( localVRef, remoteVRef, activeCall, setActiveCall ) {
 
 
             peer.current.ontrack = function (e) {
-                console.log('ontrack Executed');
+
                 remoteVideo.srcObject = e.streams[0];
             }
 
             if (!activeCall) return;
 
-            
+
 
             const stream = await startCamera();
 
@@ -68,6 +74,8 @@ export function useWebRTC( localVRef, remoteVRef, activeCall, setActiveCall ) {
 
         })();
 
+
+
         return () => {
             removeListener(handleMessage);
         }
@@ -75,14 +83,32 @@ export function useWebRTC( localVRef, remoteVRef, activeCall, setActiveCall ) {
 
     }, [activeCall]);
 
+    function endCall() {
+
+        localVRef.current.srcObject?.getTracks().forEach((track) => { track.stop() });
+        localVRef.current.srcObject = null;
+        remoteVRef.current.srcObject = null;
+
+        peer.current.close();
+        peer.current = new RTCPeerConnection();
+        setActiveCall(null);
+
+
+        const hangUpMsg = { type: 'hangup', senderId: activeCall.myId, remoteId: activeCall.remoteId };
+
+            wsRef.current.send(JSON.stringify(hangUpMsg));
+
+    }
+
+    return { endCall }
+
     async function handleMessage(message) {
         if (message.type === 'answer') {
-            console.log('answer received: ', message);
-            if(!peer.current.remoteDescription){
+            if (!peer.current.remoteDescription) {
 
                 await peer.current.setRemoteDescription(message.sdp);
             }
-            console.log('remoteDescription:', peer.current.remoteDescription);
+            
 
         }
         else if (message.type === 'offer') {
@@ -92,7 +118,6 @@ export function useWebRTC( localVRef, remoteVRef, activeCall, setActiveCall ) {
                 setActiveCall(localActiveCall);
 
             }
-            console.log('logging from offer', message);
 
             await peer.current.setRemoteDescription(message.sdp);
 
@@ -104,8 +129,11 @@ export function useWebRTC( localVRef, remoteVRef, activeCall, setActiveCall ) {
         }
         else if (message.type === 'onicecandidate') {
 
-           console.log('logging from icecandidate: ', message);
             await peer.current.addIceCandidate(message.candidate);
+        }
+
+        else if(message.type === 'hangup'){
+            endCall();
         }
     }
 

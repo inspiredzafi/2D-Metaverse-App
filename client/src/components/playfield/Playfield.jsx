@@ -2,9 +2,9 @@ import React, { useRef } from 'react'
 import { useGame } from '../../hooks/useGame.js'
 import './Playfield.css'
 
-const Playfield = ({setActiveCall}) => {
+const Playfield = ({activeCall, setActiveCall}) => {
   const ref = useRef(null);
-  useGame(ref, setActiveCall);
+  useGame(ref, activeCall, setActiveCall);
 
   return (
 

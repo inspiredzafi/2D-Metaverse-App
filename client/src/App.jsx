@@ -5,6 +5,7 @@ import CallArea from './components/callArea/CallArea.jsx';
 import { useContext } from 'react';
 import SocketContext, { SocketProvider } from './context/SocketContext.jsx';
 import { useState } from 'react';
+import { PlayerProvider } from './context/PlayersContext.jsx';
 
 import './App.css';
 
@@ -14,10 +15,17 @@ const App = () => {
   return (
     <>
       <Header />
-      <div className="container">
-        <Playfield setActiveCall={setActiveCall} />
-        <CallArea activeCall={activeCall} setActiveCall={setActiveCall} />
-      </div>
+      <PlayerProvider>
+
+        <div className="container">
+
+          <Playfield activeCall={activeCall} setActiveCall={setActiveCall} />
+          <CallArea activeCall={activeCall} setActiveCall={setActiveCall} />
+
+        </div>
+
+      </PlayerProvider>
+      
       <button onClick={() => setActiveCall({ myId: '234', remoteId: '123' })}>
         Test Call
       </button>

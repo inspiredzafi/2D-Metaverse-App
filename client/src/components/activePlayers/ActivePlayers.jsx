@@ -1,12 +1,24 @@
-import React from 'react'
+import React, { useContext } from 'react'
 import './ActivePlayers.css';
+import PlayersContext from '../../context/PlayersContext';
+import PlayerTile from '../playerTile/PlayerTile';
+
 
 const ActivePlayers = () => {
-  return (
-    <div id='activePlayers'>
-        <h3>Active People in the Space</h3>
+  const {playersList} = useContext(PlayersContext);
 
+  return (
+    <>
+    <h3>In this Space</h3>
+    <div className="activePlayersList">
+      {
+      playersList.map((player) => 
+        <PlayerTile key={player.id} player={player} />
+        )
+        }
     </div>
+      </>
+    
   )
 }
 

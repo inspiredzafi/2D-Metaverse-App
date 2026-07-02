@@ -1,5 +1,6 @@
 import { useContext, useEffect, useReducer, useRef } from "react";
 import SocketContext from "../context/SocketContext.jsx";
+import {PlayersContext} from "../context/PlayersContext.jsx";
 
 
 function renderPlayer(player, ctx, avatarR) {
@@ -48,15 +49,17 @@ function renderPlayer(player, ctx, avatarR) {
 
 
 
-export function useGame(canvasRef, setActiveCall) {
+export function useGame(canvasRef, activeCall, setActiveCall) {
 
-    const myPlayer = useRef({ id: localStorage.getItem('id'), name: localStorage.getItem('name'), x: 30, y: 30, color: '#87CEEB' });
+    const myPlayer = useRef({ id: crypto.randomUUID(), name: localStorage.getItem('name'), x: 30, y: 30, color: '#87CEEB' });
     const moveStep = 3;
     const avatarR = 25;
     const boundary = 100;
     const keys = {};
-    const playersInSpace = useRef({});
+    const {playersInSpace, setPlayersList} = useContext(PlayersContext);
+    
     const { wsRef, addListener, removeListener } = useContext(SocketContext);
+    const activeCalls = useRef(new Set());
     let testBool = true;
     // const ws = new WebSocket('ws://localhost:3000');
 
@@ -84,6 +87,8 @@ export function useGame(canvasRef, setActiveCall) {
 
             myPlayer.current.x = x; myPlayer.current.y = y;
             myPlayer.current.color = '#' + Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0');
+            localStorage.setItem('color', myPlayer.current.color);
+            
 
             wsRef.current.send(JSON.stringify({ type: 'auth', player: myPlayer.current }));
 
@@ -105,7 +110,8 @@ export function useGame(canvasRef, setActiveCall) {
             if (message.type === 'join') {
                 const newPlayer = message.player;
 
-                playersInSpace.current = { ...playersInSpace.current, [newPlayer.id]: newPlayer }
+                playersInSpace.current = { ...playersInSpace.current, [newPlayer?.id]: newPlayer }
+                setPlayersList([...Object.values(myPlayer), ...Object.values(playersInSpace.current)])
             }
 
             else if (message.type === 'move') {
@@ -123,6 +129,28 @@ export function useGame(canvasRef, setActiveCall) {
             else if (message.type === 'leave') {
                 const { id } = message;
                 delete playersInSpace.current[id];
+                setPlayersList([...Object.values(myPlayer), ...Object.values(playersInSpace.current)]);
+            }
+        }
+
+        function getDistance(p){
+            return Math.sqrt(Math.pow(myPlayer.current.x - p.x, 2) + Math.pow(myPlayer.current.y - p.y, 2));
+        }
+
+        function checkProximity(p){
+            const distance = getDistance(p);
+
+            if(distance <= 100 && !activeCalls.current.has(p.id)){
+                activeCalls.current.add(p.id);
+                setActiveCall({myId: myPlayer.current.id, remoteId: p.id })
+
+            }else if(distance > 100 && activeCalls.current.has(p.id)){
+                activeCalls.current.delete(p.id);
+
+                const hangUpMsg = { type: 'hangup', senderId: myPlayer.current.myId, remoteId: p.id };
+
+                wsRef.current.send(JSON.stringify(hangUpMsg));
+                
             }
         }
 
@@ -162,8 +190,11 @@ export function useGame(canvasRef, setActiveCall) {
             Object.values(playersInSpace.current).forEach((player) => {
                 // 
                 renderPlayer(player, ctx, avatarR);
+                checkProximity(player)
 
             });
+
+            
 
 
             requestAnimationFrame(gameLoop);
@@ -175,6 +206,7 @@ export function useGame(canvasRef, setActiveCall) {
             removeListener(handleMessage);
         }
     }, []);
+
 
 
 }

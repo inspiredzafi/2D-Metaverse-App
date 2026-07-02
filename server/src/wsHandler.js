@@ -25,6 +25,9 @@ export default function wsHandler(ws){
 
                 broadcast({type: 'move', id, x, y}, socket);
             }
+            else if(message.type === 'hangup'){
+                sendToUser(message)
+            }
 
             else if(message.type === 'offer'){
                 sendToUser(message);

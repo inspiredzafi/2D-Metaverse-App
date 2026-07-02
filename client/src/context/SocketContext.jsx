@@ -3,7 +3,7 @@ import { createContext, useEffect, useRef } from "react";
 const SocketContext = createContext(null);
 
 export function SocketProvider ({children}){
-    console.log('SocketProvider rendered');
+
     const wsRef = useRef(new WebSocket('ws://localhost:3000'));
     const listeners = useRef([]);
 

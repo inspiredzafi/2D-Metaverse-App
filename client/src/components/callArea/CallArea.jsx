@@ -10,13 +10,15 @@ const CallArea = ({activeCall, setActiveCall}) => {
   const remoteVRef = useRef(null);
   const localVRef = useRef(null);
    
-    useWebRTC(localVRef, remoteVRef, activeCall, setActiveCall);
+    const {endCall} = useWebRTC(localVRef, remoteVRef, activeCall, setActiveCall);
 
   return (
     <div id='call-area'>
         <ActiveCall remoteVRef= {remoteVRef} localVRef = {localVRef}/>
         <ActivePlayers/>
-        <button id='endCallBtn'>End Call</button>
+        <button id='endCallBtn' onClick={endCall}
+          
+         >End Call</button>
     </div>
   )
 }
